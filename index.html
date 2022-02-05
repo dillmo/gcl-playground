@@ -1,0 +1,32 @@
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>GCL Playground</title>
+</head>
+
+<body>
+  <textarea id="in"></textarea>
+  <div id="out"></div>
+
+  <script src="wasm_exec.js"></script>
+  <script>
+    const go = new Go()
+    WebAssembly.instantiateStreaming(fetch("main.wasm"),
+      go.importObject)
+      .then(({instance}) => go.run(instance));
+  </script>
+  <script>
+    const input = document.querySelector("#in");
+    const output = document.querySelector("#out");
+    input.addEventListener("input", (event) => {
+      const compiled = compileStr(event.target.value);
+      output.innerHTML = compiled;
+      MathJax.typeset();
+    });
+  </script>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</body>
+
+</html>

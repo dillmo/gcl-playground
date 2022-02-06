@@ -133,7 +133,14 @@ func NewParser(l *Lexer) *Parser {
 
 // Top-level parse function
 func (p *Parser) Parse() (string, error) {
-  return p.assign()
+  result, err := p.assign()
+  if err == nil {
+    nextToken, _ := p.lexer.Next()
+    if nextToken != nil {
+      err = fmt.Errorf("unexpected token")
+    }
+  }
+  return result, err
 }
 
 // Parse an <ASSIGN> nonterminal

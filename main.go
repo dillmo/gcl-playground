@@ -17,7 +17,9 @@
 */
 
 /* Language spec
- * <EXPR> -> <ASSIGN>
+ * <EXPR> -> <ASSIGN> <EXPR'>
+ * <EXPR'> -> ; <EXPR>
+ *          | <EMPTY>
  * <ASSIGN> -> <ID> <ASSIGN'> <MATH>
  * <ASSIGN'> -> , <ID> <ASSIGN'> <MATH> ,
  *            | :=
@@ -41,6 +43,7 @@ const (
   PLUS
   GETS
   COMMA
+  SEMICOLON
   ERROR
 )
 
@@ -91,6 +94,9 @@ func (l *Lexer) Next() (*Token, error) {
   // Comma
   case r == ',':
     token, err = &Token{Type: COMMA}, nil
+  // Semicolon
+  case r == ';':
+    token, err = &Token{Type: SEMICOLON}, nil
   // Not a recognized token
   default:
     token, err = &Token{Type: ERROR}, nil
@@ -133,14 +139,51 @@ func NewParser(l *Lexer) *Parser {
 
 // Top-level parse function
 func (p *Parser) Parse() (string, error) {
-  result, err := p.assign()
-  if err == nil {
-    nextToken, _ := p.lexer.Next()
-    if nextToken != nil {
-      err = fmt.Errorf("unexpected token")
-    }
+  // Parse as much input as we can
+  result, err := p.expr()
+
+  // There should be no tokens left
+  nextToken, _ := p.lexer.Next()
+  if nextToken != nil {
+    return result, fmt.Errorf("unexpected token")
   }
+
   return result, err
+}
+
+// Parse an <EXPR> nonterminal
+func (p *Parser) expr() (string, error) {
+  // We only support assignment statements right now.
+  result, err := p.assign()
+  if err != nil {
+    return result, err
+  }
+
+  // Parse the rest of the expression
+  rest, err := p.exprP()
+  if err != nil {
+    return result + rest, err
+  }
+
+  return result + rest, err
+}
+
+// Parse an <EXPR'> nonterminal
+func (p *Parser) exprP() (string, error) {
+  token, err := p.lexer.Next()
+  // lexer errors when there is no more input
+  if err != nil {
+    return "", nil
+  }
+  // The next token should be a semicolon
+  if token.Type != SEMICOLON {
+    // Rewind the lexer so the next function gets this token
+    p.lexer.Rewind()
+    return "", nil
+  }
+  rest, err := p.expr()
+  // Tack on any errors to what we've already parsed
+  return fmt.Sprintf("\\); <br />\n\\(%s", rest), err
 }
 
 // Parse an <ASSIGN> nonterminal

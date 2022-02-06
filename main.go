@@ -17,7 +17,10 @@
 */
 
 /* Language spec
- * <EXPR> -> <MATH>
+ * <EXPR> -> <ASSIGN>
+ * <ASSIGN> -> <ID> <ASSIGN'> <MATH>
+ * <ASSIGN'> -> , <ID> <ASSIGN'> <MATH> ,
+ *            | :=
  * <MATH> -> <ID> <MATH'>
  * <MATH'> -> + <MATH>
  *          | <EMPTY>
@@ -36,6 +39,8 @@ import (
 const (
   ID = iota
   PLUS
+  GETS
+  COMMA
   ERROR
 )
 
@@ -46,34 +51,75 @@ type Token struct {
 
 type Lexer struct {
   in io.RuneReader
+  stream []*Token
+  pos int
 }
 
 func NewLexer(r io.RuneReader) *Lexer {
-  return &Lexer{in: r}
+  return &Lexer{in: r, pos: 0}
 }
 
 // Return the next token, error at end of input
 func (l *Lexer) Next() (*Token, error) {
+  // Return the same token after the client rewinds
+  if l.pos < len(l.stream) {
+    token := l.stream[l.pos]
+    l.pos++
+    return token, nil
+  }
+
   r, _, err := l.in.ReadRune()
   // ReadRune errors when it runs out of characters to read
   if err != nil {
     return nil, fmt.Errorf("no more tokens")
   }
 
+  var token *Token
   switch {
   // Plus sign
   case r == '+':
-    return &Token{Type: PLUS}, nil
+    token, err = &Token{Type: PLUS}, nil
   // Identifiers are single alphabetical characters
   case ('a' <= r && r <= 'z') || ('A' <= r && r <= 'Z'):
-    return &Token{Type: ID, Lexeme: string(r)}, nil
+    token, err = &Token{Type: ID, Lexeme: string(r)}, nil
   // Skip whitespace
   case r == ' ' || r == '\n' || r == '\r':
-    return l.Next()
+    token, err = l.Next()
+  // Lex rest of := command
+  case r == ':':
+    token, err = l.lexGets()
+  // Comma
+  case r == ',':
+    token, err = &Token{Type: COMMA}, nil
   // Not a recognized token
   default:
-    return &Token{Type: ERROR}, nil
+    token, err = &Token{Type: ERROR}, nil
   }
+  l.stream = append(l.stream, token)
+  l.pos++
+  return token, err
+}
+
+// Rewind the lexer by one token
+func (l *Lexer) Rewind() {
+  if l.pos > 0 {
+    l.pos--
+  }
+}
+
+// Lex the '=' character in a ':=' token
+func (l *Lexer) lexGets() (*Token, error) {
+  r, _, err := l.in.ReadRune()
+  // ReadRune errors when it runs out of characters to read
+  if err != nil {
+    return nil, fmt.Errorf("no more tokens")
+  }
+  // The next character should be '='
+  if r == '=' {
+    return &Token{Type: GETS}, nil
+  }
+  // This is not a recognized token
+  return &Token{Type: ERROR}, nil
 }
 
 // Parser is a recursive-descent parser
@@ -87,7 +133,70 @@ func NewParser(l *Lexer) *Parser {
 
 // Top-level parse function
 func (p *Parser) Parse() (string, error) {
-  return p.math()
+  return p.assign()
+}
+
+// Parse an <ASSIGN> nonterminal
+func (p *Parser) assign() (string, error) {
+  token, err := p.lexer.Next()
+  // lexer errors when there is no more input
+  // All assign expressions start with an identifier
+  if err != nil || token.Type != ID {
+    return "", fmt.Errorf("expected a variable")
+  }
+  // We have an identifier. Now try to parse the middle of
+  // the expression.
+  middle, err := p.assignP()
+  // Tack what we already have onto any errors
+  if err != nil {
+    return fmt.Sprintf("%s %s", token.Lexeme, middle), err
+  }
+  // Last portion should be a math nonterminal
+  math, err := p.math()
+  return fmt.Sprintf("%s %s %s", token.Lexeme, middle, math), err
+}
+
+// Parse an <ASSIGN'> nonterminal
+func (p *Parser) assignP() (string, error) {
+  token, err := p.lexer.Next()
+  // lexer errors when there is no more input
+  if err != nil {
+    return "", fmt.Errorf("expected ',' or ':='")
+  }
+
+  switch token.Type {
+  // The expression continues to recurse
+  case COMMA:
+    token, err = p.lexer.Next()
+    // Next token should be an identifier
+    if err != nil || token.Type != ID {
+      return "", fmt.Errorf("expected a variable")
+    }
+    id := token.Lexeme
+    // Recurse
+    middle, err := p.assignP()
+    // Tack what we already have onto any errors
+    if err != nil {
+      return fmt.Sprintf(", %s %s", id, middle), err
+    }
+    // Next portion should be a <MATH> nonterminal
+    math, err := p.math()
+    // Tack what we already have onto any errors
+    if err != nil {
+      return fmt.Sprintf(", %s %s %s", id, middle, math), err
+    }
+    // Last token should be a ','
+    token, err = p.lexer.Next()
+    if err != nil {
+      return fmt.Sprintf(", %s %s %s", id, middle, math), fmt.Errorf("expected ','")
+    }
+    return fmt.Sprintf(", %s %s %s, ", id, middle, math), nil
+  // ':=' is the base case for recursion
+  case GETS:
+    return " \\coloneqq ", nil
+  default:
+    return "", fmt.Errorf("expected ',' or ':='")
+  }
 }
 
 // Parse a <MATH> nonterminal
@@ -115,7 +224,9 @@ func (p *Parser) mathP() (string, error) {
   }
   // Math expressions are always continued with plus signs
   if token.Type != PLUS {
-    return "", fmt.Errorf("expected +")
+    // Rewind the lexer so the next function gets this token
+    p.lexer.Rewind()
+    return "", nil
   }
   // We have a plus sign. Now try to parse the rest of the
   // expression.

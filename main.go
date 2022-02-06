@@ -183,7 +183,7 @@ func (p *Parser) exprP() (string, error) {
   }
   rest, err := p.expr()
   // Tack on any errors to what we've already parsed
-  return fmt.Sprintf("\\); <br />\n\\(%s", rest), err
+  return fmt.Sprintf("; <br />\n%s", rest), err
 }
 
 // Parse an <ASSIGN> nonterminal
@@ -199,11 +199,11 @@ func (p *Parser) assign() (string, error) {
   middle, err := p.assignP()
   // Tack what we already have onto any errors
   if err != nil {
-    return fmt.Sprintf("%s %s", token.Lexeme, middle), err
+    return fmt.Sprintf("\\(%s\\) %s", token.Lexeme, middle), err
   }
   // Last portion should be a math nonterminal
   math, err := p.math()
-  return fmt.Sprintf("%s %s %s", token.Lexeme, middle, math), err
+  return fmt.Sprintf("\\(%s %s %s\\)", token.Lexeme, middle, math), err
 }
 
 // Parse an <ASSIGN'> nonterminal
@@ -298,10 +298,10 @@ func CompileStr(str string) string {
     // If there was an error, we still display what we
     // managed to parse so the user can more easily locate
     // their mistake.
-    return fmt.Sprintf("<p>\\(%s\\) %s</p>", out, err)
+    return fmt.Sprintf("<p>%s %s</p>", out, err)
   }
-  // Return a MathJax expression.
-  return fmt.Sprintf("<p>\\(%s\\)</p>", out)
+
+  return fmt.Sprintf("<p>%s</p>", out)
 }
 
 // Wrap the CompileStr function for JavaScript to use via

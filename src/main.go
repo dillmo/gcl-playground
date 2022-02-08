@@ -282,7 +282,7 @@ func (p *Parser) assign() (string, error) {
   middle, err := p.assignP()
   // Tack what we already have onto any errors
   if err != nil {
-    return fmt.Sprintf("\\(%s\\) %s", token.Lexeme, middle), err
+    return fmt.Sprintf("\\(%s %s\\)", token.Lexeme, middle), err
   }
   // Last portion should be a math nonterminal
   math, err := p.math()

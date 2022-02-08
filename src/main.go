@@ -18,6 +18,7 @@
 
 /* Language spec
  * <EXPR> -> <ASSIGN> <EXPR'>
+ *         | skip <EXPR'>
  * <EXPR'> -> ; <EXPR>
  *          | <EMPTY>
  * <ASSIGN> -> <ID> <ASSIGN'> <MATH>
@@ -44,6 +45,7 @@ const (
   GETS
   COMMA
   SEMICOLON
+  SKIP
   ERROR
 )
 
@@ -54,8 +56,14 @@ type Token struct {
 
 type Lexer struct {
   in io.RuneReader
+  // These two fields are used to rewind by one token when
+  // necessary
   stream []*Token
   pos int
+  // These two fields are used to rewind by one rune when
+  // necessary
+  lastRune rune
+  repeatRune bool
 }
 
 func NewLexer(r io.RuneReader) *Lexer {
@@ -71,8 +79,8 @@ func (l *Lexer) Next() (*Token, error) {
     return token, nil
   }
 
-  r, _, err := l.in.ReadRune()
-  // ReadRune errors when it runs out of characters to read
+  r, err := l.nextRune()
+  // nextRune errors when it runs out of runes to read
   if err != nil {
     return nil, fmt.Errorf("no more tokens")
   }
@@ -82,9 +90,9 @@ func (l *Lexer) Next() (*Token, error) {
   // Plus sign
   case r == '+':
     token, err = &Token{Type: PLUS}, nil
-  // Identifiers are single alphabetical characters
+  // Identifiers are single alphabetical runes
   case ('a' <= r && r <= 'z') || ('A' <= r && r <= 'Z'):
-    token, err = &Token{Type: ID, Lexeme: string(r)}, nil
+    token, err = l.lexIDOrKeyword(r), nil
   // Skip whitespace
   case r == ' ' || r == '\n' || r == '\r':
     token, err = l.Next()
@@ -113,14 +121,60 @@ func (l *Lexer) Rewind() {
   }
 }
 
-// Lex the '=' character in a ':=' token
+// Rewind the lexer's reader by one rune
+func (l *Lexer) rewindRune(lastRune rune) {
+  l.lastRune = lastRune
+  l.repeatRune = true
+}
+
+// Return the next rune in the input sequence
+func (l *Lexer) nextRune() (rune, error) {
+  // If we recently rewound by one rune, return the last
+  // rune
+  if l.repeatRune {
+    l.repeatRune = false
+    return l.lastRune, nil
+  } else {
+    r, _, err := l.in.ReadRune()
+    // ReadRune errors when it runs out of runes to read
+    return r, err
+  }
+}
+
+// Lex the rest of an ID or keyword after the first rune
+func (l *Lexer) lexIDOrKeyword(firstChar rune) *Token {
+  var builder strings.Builder
+  builder.WriteRune(firstChar)
+  r, err := l.nextRune()
+  // r is always an identifier rune (a-z, A-Z) inside this
+  // loop
+  for (('a' <= r && r <= 'z') || ('A' <= r && r <= 'Z')) && err == nil {
+    builder.WriteRune(r)
+    r, err = l.nextRune()
+  }
+  // Either err = nil or we looked ahead to a non-ID rune
+  // and need to rewind
+  if err == nil {
+    l.rewindRune(r)
+  }
+  str := builder.String()
+  // Check if str is a keyword before returning
+  switch str {
+  case "skip":
+    return &Token{Type: SKIP}
+  default:
+    return &Token{Type: ID, Lexeme: str}
+  }
+}
+
+// Lex the '=' rune in a ':=' token
 func (l *Lexer) lexGets() (*Token, error) {
-  r, _, err := l.in.ReadRune()
-  // ReadRune errors when it runs out of characters to read
+  r, err := l.nextRune()
+  // nextRune errors when it runs out of runes to read
   if err != nil {
     return nil, fmt.Errorf("no more tokens")
   }
-  // The next character should be '='
+  // The next rune should be '='
   if r == '=' {
     return &Token{Type: GETS}, nil
   }
@@ -153,8 +207,29 @@ func (p *Parser) Parse() (string, error) {
 
 // Parse an <EXPR> nonterminal
 func (p *Parser) expr() (string, error) {
-  // We only support assignment statements right now.
-  result, err := p.assign()
+  // We can determine which type of expression to parse by
+  // reading the next token
+  nextToken, err := p.lexer.Next()
+  // If we hit the end of input, then let the <ASSIGN>
+  // parser write the error message
+  if err != nil {
+    return p.assign()
+  }
+  
+  var result string
+  switch nextToken.Type {
+  // If the next token is an ID, then this is an assignment
+  // command
+  case ID:
+    // Rewind the lexer for the next parser call
+    p.lexer.Rewind()
+    result, err = p.assign()
+  // If the next token is "skip", then this is a skip
+  // command
+  case SKIP:
+    result, err = "<strong>skip</strong>", nil
+  }
+  // Tack any errors onto the rest of the expression
   if err != nil {
     return result, err
   }

@@ -228,6 +228,9 @@ func (p *Parser) expr() (string, error) {
   // command
   case SKIP:
     result, err = "<strong>skip</strong>", nil
+  // If the next token is neither, then the input is invalid
+  default:
+    result, err = "", fmt.Errorf("unexpected token")
   }
   // Tack any errors onto the rest of the expression
   if err != nil {

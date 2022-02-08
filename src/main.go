@@ -196,6 +196,11 @@ func (p *Parser) Parse() (string, error) {
   // Parse as much input as we can
   result, err := p.expr()
 
+  // Tack any errors onto what we parsed
+  if err != nil {
+    return result, err
+  }
+
   // There should be no tokens left
   nextToken, _ := p.lexer.Next()
   if nextToken != nil {

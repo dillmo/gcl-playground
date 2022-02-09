@@ -17,8 +17,7 @@
 */
 
 /* Language spec
- * <SPEC> -> <COND> <EXPR>
- *         | <EXPR>
+ * <SPEC> -> <COND?> <EXPR>
  * <EXPR> -> <ASSIGN> <COND?> <EXPR'>
  *         | skip <COND?> <EXPR'>
  * <EXPR'> -> ; <EXPR>

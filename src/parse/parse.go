@@ -19,10 +19,8 @@
 /* Language spec
  * <SPEC> -> <COND> <EXPR>
  *         | <EXPR>
- * <EXPR> -> <ASSIGN> <COND> <EXPR'>
- *         | <ASSIGN> <EXPR'>
- *         | skip <COND> <EXPR'>
- *         | skip <EXPR'>
+ * <EXPR> -> <ASSIGN> <COND?> <EXPR'>
+ *         | skip <COND?> <EXPR'>
  * <EXPR'> -> ; <EXPR>
  *          | <EMPTY>
  * <ASSIGN> -> <ID> <ASSIGN'> <MATH>
@@ -30,6 +28,8 @@
  *            | :=
  * <MATH> -> <ID> <MATH'>
  * <MATH'> -> + <MATH>
+ *          | <EMPTY>
+ * <COND?> -> <COND>
  *          | <EMPTY>
  * <COND> -> { <MATH> }
  */

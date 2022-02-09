@@ -32,6 +32,8 @@ const (
   COMMA
   SEMICOLON
   SKIP
+  LBRACE
+  RBRACE
   ERROR
 )
 
@@ -91,6 +93,12 @@ func (l *Lexer) Next() (*Token, error) {
   // Semicolon
   case r == ';':
     token, err = &Token{Type: SEMICOLON}, nil
+  // Left curly brace
+  case r == '{':
+    token, err = &Token{Type: LBRACE}, nil
+  // Right curly brace
+  case r == '}':
+    token, err = &Token{Type: RBRACE}, nil
   // Not a recognized token
   default:
     token, err = &Token{Type: ERROR}, nil

@@ -17,7 +17,11 @@
 */
 
 /* Language spec
- * <EXPR> -> <ASSIGN> <EXPR'>
+ * <SPEC> -> <COND> <EXPR>
+ *         | <EXPR>
+ * <EXPR> -> <ASSIGN> <COND> <EXPR'>
+ *         | <ASSIGN> <EXPR'>
+ *         | skip <COND> <EXPR'>
  *         | skip <EXPR'>
  * <EXPR'> -> ; <EXPR>
  *          | <EMPTY>
@@ -27,6 +31,7 @@
  * <MATH> -> <ID> <MATH'>
  * <MATH'> -> + <MATH>
  *          | <EMPTY>
+ * <COND> -> { <MATH> }
  */
 
 package parse
@@ -48,8 +53,20 @@ func NewParser(l *lex.Lexer) *Parser {
 
 // Top-level parse function
 func (p *Parser) Parse() (string, error) {
+  // Parse an optional <COND> nonterminal
+  cond, err := p.maybeCond()
+  result := cond
+  // Tack any errors onto what we already parsed
+  if err != nil {
+    return result, err
+  }
+
   // Parse as much input as we can
-  result, err := p.expr()
+  rest, err := p.expr()
+  // If we parsed anything, tack it on
+  if rest != "" {
+    result = fmt.Sprintf("%s <br />\n%s", result, rest)
+  }
 
   // Tack any errors onto what we parsed
   if err != nil {
@@ -63,6 +80,48 @@ func (p *Parser) Parse() (string, error) {
   }
 
   return result, err
+}
+
+// Parse a <COND> nonterminal
+func (p *Parser) cond() (string, error) {
+  // The first token should be '{'
+  token, err := p.lexer.Next()
+  if err != nil || token.Type != lex.LBRACE {
+    return "", fmt.Errorf("expected '{'")
+  }
+  // There should be a math expression in the middle
+  middle, err := p.math()
+  // Tack any errors onto what we managed to parse
+  if err != nil {
+    return fmt.Sprintf("\\(\\{%s\\)", middle), err
+  }
+  // The last token should be '}'
+  token, err = p.lexer.Next()
+  if err != nil || token.Type != lex.RBRACE {
+    return fmt.Sprintf("\\(\\{%s\\)", middle), fmt.Errorf("expected '}'")
+  }
+
+  return fmt.Sprintf("\\(\\{%s\\}\\)", middle), nil
+}
+
+// Parse an optional <COND> nonterminal
+func (p *Parser) maybeCond() (string, error) {
+  nextToken, err := p.lexer.Next()
+  // End of input is not an error for optional <COND>
+  if err != nil {
+    return "", nil
+  }
+
+  // Rewind the lexer for the next parser call
+  p.lexer.Rewind()
+  // <COND> expressions start with '{'
+  if nextToken.Type != lex.LBRACE {
+    return "", nil
+  }
+
+  cond, err := p.cond()
+  // Tack any errors onto what we already parsed
+  return cond, err
 }
 
 // Parse an <EXPR> nonterminal
@@ -93,6 +152,17 @@ func (p *Parser) expr() (string, error) {
     result, err = "", fmt.Errorf("unexpected token")
   }
   // Tack any errors onto the rest of the expression
+  if err != nil {
+    return result, err
+  }
+
+  // Parse an optional <COND> nonterminal
+  cond, err := p.maybeCond()
+  // If we parsed anything, tack it on
+  if cond != "" {
+    result = fmt.Sprintf("%s <br />\n%s", result, cond)
+  }
+  // Tack any errors onto what we already parsed
   if err != nil {
     return result, err
   }

@@ -1,0 +1,94 @@
+body {
+  background-color: hsl(0, 0%, 13%);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%237e7e7e' fill-opacity='0.4'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0H5v5H0v1h5v94h1V6h94V5H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  color: hsl(0, 0%, 97%);
+  font-family: -apple-system Segeo UI, Roboto, Noto Sans, Ubuntu, Cantarell,
+  Helvetica Neue;
+}
+
+.split-button {
+  display: inline-flex;
+  cursor: pointer;
+  margin-top: 16px;
+}
+
+.split-button > * {
+  transition: all 0.2s ease;
+}
+
+button {
+  all: unset;
+  background-color: hsl(42, 78%, 60%);
+  color: hsl(0, 0%, 13%);
+  padding: 12px 16px;
+  cursor: pointer;
+}
+
+.split-button:hover button {
+  background-color: hsl(42, 63%, 48%);
+}
+
+.split-button span {
+  display: inline-block;
+  background-color: hsl(43, 72%, 37%);
+}
+
+.split-button:hover span {
+  background-color: hsl(43, 77%, 27%);
+  color: hsl(45, 90%, 88%);
+}
+
+.split-button > span svg {
+  width: 16px;
+  height: 16px;
+  padding: 16px;
+}
+
+input {
+  all: unset;
+  background-color: hsl(0, 0%, 38%);
+}
+
+main {
+  width: calc(1024px - 128px);
+  height: calc(100vh - 96px);
+  overflow: visible;
+  margin: 0 auto;
+  position: relative;
+}
+
+main > div {
+  margin-top: 48px;
+  width: 512px;
+  height: calc(100vh - 128px);
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+main > div.focused {
+  background-color: hsl(0, 0%, 23%);
+  box-shadow: inset 0 8px 0 hsl(43, 72%, 37%);
+}
+
+main > div.unfocused {
+  background-color: hsl(0, 0%, 18%);
+  box-shadow: inset 0 8px 0 hsl(43, 77%, 27%);
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  z-index: -1;
+}
+
+#refiner label {
+  display: inline-block;
+  width: 128px;
+  margin-bottom: 16px;
+}
+
+#refiner input {
+  width: 256px;
+}
+
+#refiner-help-text {
+  margin-bottom: 36px;
+}
